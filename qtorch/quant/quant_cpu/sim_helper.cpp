@@ -11,6 +11,13 @@ void fixed_min_max(int wl, int fl, bool symmetric, float *t_min, float *t_max)
     *t_min = *t_min + ldexp(1.0, sigma);
 }
 
+void fixed_unsigned_min_max(int wl, int fl, float *t_min, float *t_max)
+{
+  int sigma = -fl;
+  *t_min = 0;
+  *t_max = ldexp(1.0, wl - fl) - ldexp(1.0, sigma);
+}
+
 float round(float a, float r, int sigma)
 {
   a = ldexp(a, -sigma);

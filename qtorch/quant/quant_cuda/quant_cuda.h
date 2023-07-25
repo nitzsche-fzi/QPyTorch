@@ -36,6 +36,34 @@ std::tuple<Tensor, Tensor> fixed_point_quantize_stochastic_mask_cuda(Tensor a, i
 std::tuple<Tensor, Tensor> fixed_point_quantize_nearest_mask_cuda(Tensor a, int wl, int fl, bool symmetric);
 
 /**
+ * quantize a FloatTensor into unsigned fixed point number with word length [wl]
+ * and fractional bits [fl], with option of clamping the over/underflow numbers
+ * Stochastic Rounding.
+ **/
+Tensor fixed_point_unsigned_quantize_stochastic_cuda(Tensor a, int wl, int fl, bool use_clamp);
+
+/**
+ * quantize a FloatTensor into unsigned fixed point number with word length [wl]
+ * and fractional bits [fl], with option of clamping the over/underflow numbers
+ * Nearest Rounding.
+ **/
+Tensor fixed_point_unsigned_quantize_nearest_cuda(Tensor a, int wl, int fl, bool use_clamp);
+
+/**
+ * quantize a FloatTensor into unsigned fixed point number with word length [wl]
+ * and fractional bits [fl], clamp the over/underflow number and recording the clamping into a mask
+ * Stochastic Rounding.
+ **/
+std::tuple<Tensor, Tensor> fixed_point_unsigned_quantize_stochastic_mask_cuda(Tensor a, int wl, int fl);
+
+/**
+ * quantize a FloatTensor into unsigned fixed point number with word length [wl]
+ * and fractional bits [fl], clamp the over/underflow number and recording the clamping into a mask
+ * Nearest Rounding.
+ **/
+std::tuple<Tensor, Tensor> fixed_point_unsigned_quantize_nearest_mask_cuda(Tensor a, int wl, int fl);
+
+/**
  * quantize a FloatTensor into fixed point number with word length [wl]
  * and fractional bits [fl]
  * Stochastic Rounding.

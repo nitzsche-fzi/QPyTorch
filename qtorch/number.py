@@ -1,4 +1,4 @@
-__all__ = ["Number", "FixedPoint", "BlockFloatingPoint", "FloatingPoint"]
+__all__ = ["Number", "FixedPoint", "FixedPointUnsigned", "BlockFloatingPoint", "FloatingPoint"]
 
 
 class Number:
@@ -74,6 +74,17 @@ class FixedPoint(Number):
 
     def __repr__(self):
         return "FixedPoint (wl={:d}, fl={:d})".format(self.wl, self.fl)
+    
+
+class FixedPointUnsigned(FixedPoint):
+    def __init__(self, wl, fl, clamp=True, symmetric=False):
+        super().__init__(wl, fl, clamp, symmetric)
+
+    def __str__(self):
+        return "FixedPointUnsigned (wl={:d}, fl={:d})".format(self.wl, self.fl)
+
+    def __repr__(self):
+        return "FixedPointUnsigned (wl={:d}, fl={:d})".format(self.wl, self.fl)
 
 
 class FloatingPoint(Number):

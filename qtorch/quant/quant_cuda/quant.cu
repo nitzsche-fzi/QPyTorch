@@ -230,3 +230,100 @@ std::tuple<Tensor, Tensor> fixed_point_quantize_nearest_mask_cuda(Tensor a, int 
                                                                      t_max);
   return std::make_tuple(o, m);
 }
+
+
+void fixed_unsigned_min_max(int wl, int fl, float* t_min, float* t_max) {
+  int sigma = -fl;
+  *t_min = 0;
+  *t_max = ldexp(1.0, wl-fl) - ldexp(1.0, sigma);
+}
+
+Tensor fixed_point_unsigned_quantize_stochastic_cuda(Tensor a, int wl, int fl, bool use_clamp) {
+  // use external random number right now
+  cudaSetDevice(a.get_device());
+  auto o = at::zeros_like(a);
+  auto rand_probs = rand_like(a);
+  int64_t size = a.numel();
+  int sigma = -fl;
+  float t_min, t_max;
+  fixed_unsigned_min_max(wl, fl, &t_min, &t_max);
+  int blockSize = 1024;
+  int blockNums = (size + blockSize - 1) / blockSize;
+
+  fixed_point_quantize_kernel_stochastic<<<blockNums, blockSize>>>(a.data_ptr<float>(),
+                                                                   rand_probs.data_ptr<float>(),
+                                                                   o.data_ptr<float>(),
+                                                                   size,
+                                                                   sigma,
+                                                                   use_clamp,
+                                                                   t_min,
+                                                                   t_max);
+  return o;
+}
+
+Tensor fixed_point_unsigned_quantize_nearest_cuda(Tensor a, int wl, int fl, bool use_clamp) {
+  // use external random number right now
+  cudaSetDevice(a.get_device());
+  auto o = at::zeros_like(a);
+  int64_t size = a.numel();
+  int sigma = -fl;
+  float t_min, t_max;
+  fixed_unsigned_min_max(wl, fl, &t_min, &t_max);
+  int blockSize = 1024;
+  int blockNums = (size + blockSize - 1) / blockSize;
+
+  fixed_point_quantize_kernel_nearest<<<blockNums, blockSize>>>(a.data_ptr<float>(),
+                                                                o.data_ptr<float>(),
+                                                                size,
+                                                                sigma,
+                                                                use_clamp,
+                                                                t_min,
+                                                                t_max);
+  return o;
+}
+
+std::tuple<Tensor, Tensor> fixed_point_unsigned_quantize_stochastic_mask_cuda(Tensor a, int wl, int fl) {
+  // use external random number right now
+  cudaSetDevice(a.get_device());
+  auto o = zeros_like(a);
+  auto rand_probs = rand_like(a);
+  auto m = zeros_like(a, a.options().dtype(kByte));
+  int64_t size = a.numel();
+  int sigma = -fl;
+  float t_min, t_max;
+  fixed_unsigned_min_max(wl, fl, &t_min, &t_max);
+  int blockSize = 1024;
+  int blockNums = (size + blockSize - 1) / blockSize;
+
+  fixed_point_quantize_kernel_mask_stochastic<<<blockNums, blockSize>>>(a.data_ptr<float>(),
+                                                                        rand_probs.data_ptr<float>(),
+                                                                        o.data_ptr<float>(),
+                                                                        m.data_ptr<uint8_t>(),
+                                                                        size,
+                                                                        sigma,
+                                                                        t_min,
+                                                                        t_max);
+  return std::make_tuple(o, m);
+}
+
+std::tuple<Tensor, Tensor> fixed_point_unsigned_quantize_nearest_mask_cuda(Tensor a, int wl, int fl) {
+  // use external random number right now
+  cudaSetDevice(a.get_device());
+  auto o = at::zeros_like(a);
+  auto m = zeros_like(a, a.options().dtype(kByte));
+  int64_t size = a.numel();
+  int sigma = -fl;
+  float t_min, t_max;
+  fixed_unsigned_min_max(wl, fl, &t_min, &t_max);
+  int blockSize = 1024;
+  int blockNums = (size + blockSize - 1) / blockSize;
+
+  fixed_point_quantize_kernel_mask_nearest<<<blockNums, blockSize>>>(a.data_ptr<float>(),
+                                                                     o.data_ptr<float>(),
+                                                                     m.data_ptr<uint8_t>(),
+                                                                     size,
+                                                                     sigma,
+                                                                     t_min,
+                                                                     t_max);
+  return std::make_tuple(o, m);
+}
