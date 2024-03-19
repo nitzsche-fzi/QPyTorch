@@ -185,6 +185,27 @@ Tensor fixed_point_quantize_nearest_cuda(Tensor a, int wl, int fl, bool use_clam
   return o;
 }
 
+Tensor fixed_point_quantize_floor_cuda(Tensor a, int wl, int fl, bool use_clamp, bool symmetric) {
+  // use external random number right now
+  cudaSetDevice(a.get_device());
+  auto o = at::zeros_like(a);
+  int64_t size = a.numel();
+  int sigma = -fl;
+  float t_min, t_max;
+  fixed_min_max(wl, fl, symmetric, &t_min, &t_max);
+  int blockSize = 1024;
+  int blockNums = (size + blockSize - 1) / blockSize;
+
+  fixed_point_quantize_kernel_floor<<<blockNums, blockSize>>>(a.data_ptr<float>(),
+                                                                o.data_ptr<float>(),
+                                                                size,
+                                                                sigma,
+                                                                use_clamp,
+                                                                t_min,
+                                                                t_max);
+  return o;
+}
+
 std::tuple<Tensor, Tensor> fixed_point_quantize_stochastic_mask_cuda(Tensor a, int wl, int fl, bool symmetric) {
   // use external random number right now
   cudaSetDevice(a.get_device());

@@ -22,3 +22,13 @@ __device__ __forceinline__ float nearest_round(float a, int sigma) {
   a = ldexp(a, sigma);
   return a;
 }
+
+__device__ __forceinline__ float floor_round(float a, int sigma) {
+  // TODO: check if this is correct. Why would we use ldexp twice?
+  a = ldexp(a, -sigma);
+  a = ldexp(a, -sigma); 
+  a = floor(a);
+  a = ldexp(a, sigma);
+  a = ldexp(a, sigma);
+  return a;
+}
