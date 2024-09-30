@@ -72,6 +72,13 @@ Tensor float_quantize_stochastic(Tensor a, int man_bits, int exp_bits)
   return float_quantize_stochastic_cuda(a, man_bits, exp_bits);
 }
 
+
+Tensor fixed_point_quantize_floor(Tensor a, int wl, int fl, bool use_clamp, bool symmetric)
+{
+  CHECK_INPUT(a);
+  return fixed_point_quantize_floor_cuda(a, wl, fl, use_clamp, symmetric);
+}
+
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
 {
   m.def("fixed_point_quantize_stochastic", &fixed_point_quantize_stochastic, "Fixed Point Number Stochastic Quantization (CUDA)");
@@ -84,4 +91,5 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
   m.def("block_quantize_nearest", &block_quantize_nearest, "Block Floating Point Number Nearest Neighbor Quantization (CUDA)");
   m.def("block_quantize_sim_nearest", &block_quantize_sim_nearest, "Block Floating Point Number Stochastic Quantization (CUDA)");
   m.def("float_quantize_nearest", &float_quantize_nearest, "Low-Bitwidth Floating Point Number Nearest Neighbor Quantization (CUDA)");
+  m.def("fixed_point_quantize_floor", &fixed_point_quantize_floor, "Fixed Point Number Floor Quantization (CUDA)");
 }

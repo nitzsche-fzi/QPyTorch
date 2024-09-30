@@ -16,3 +16,5 @@ T clamp_mask_helper(T a, T min, T max, uint8_t *mask);
 void fixed_min_max(int wl, int fl, bool symmetric, float *t_min, float *t_max);
 
 float round(float a, float r, int sigma);
+
+float round_floor(float a, int sigma);

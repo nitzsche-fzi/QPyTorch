@@ -76,7 +76,7 @@ def quantizer(
     """
 
     for rounding in [forward_rounding, backward_rounding]:
-        assert rounding in ["stochastic", "nearest",], "invalid rounding type {:s}".format(rounding)
+        assert rounding in ["stochastic", "nearest", "floor",], "invalid rounding type {:s}".format(rounding)
     for num in [forward_number, backward_number]:
         if num != None:
             assert isinstance(num, Number)
@@ -108,6 +108,15 @@ def quantizer(
                 forward_quant = lambda x, quant_module: quant_module.float_quantize_stochastic(
                     x, forward_number.man, forward_number.exp
                 )
+        elif forward_rounding == "floor":
+            if type(forward_number) == BlockFloatingPoint:
+                raise NotImplementedError
+            elif type(forward_number) == FixedPoint:
+                forward_quant = lambda a, quant_module: quant_module.fixed_point_quantize_floor(
+                    a, forward_number.wl, forward_number.fl, forward_number.clamp, forward_number.symmetric,
+                )
+            elif type(forward_number) == FloatingPoint:
+                raise NotImplementedError
     else:
         if type(forward_number) == FixedPoint or forward_number == None:
             assert (
@@ -121,6 +130,8 @@ def quantizer(
                 forward_quant = lambda x, quant_module: quant_module.fixed_point_quantize_stochastic_mask(
                     x, forward_number.wl, forward_number.fl, forward_number.symmetric
                 )
+            elif forward_rounding == "floor":
+                raise NotImplementedError
         else:
             raise ValueError("zeroing clamping gradient only support fixed point.")
 
@@ -150,6 +161,15 @@ def quantizer(
             backward_quant = lambda a, quant_module: quant_module.float_quantize_stochastic(
                 a, backward_number.man, backward_number.exp
             )
+    elif backward_rounding == "floor":
+        if type(backward_number) == BlockFloatingPoint:
+            raise NotImplementedError
+        elif type(backward_number) == FixedPoint:
+            backward_quant = lambda a, quant_module: quant_module.fixed_point_quantize_floor(
+                a, backward_number.wl, backward_number.fl, backward_number.clamp, backward_number.symmetric,
+            )
+        elif type(backward_number) == FloatingPoint:
+            raise NotImplementedError
 
     if clamping_grad_zero == False:
 
@@ -231,13 +251,15 @@ def fixed_point_quantize(x, wl, fl, clamp=True, symmetric=False, rounding="stoch
         - a quantized low-precision block floating point number (torch.Tensor)
     """
     assert isinstance(x, torch.Tensor)
-    assert rounding in ["stochastic", "nearest"]
+    assert rounding in ["stochastic", "nearest", "floor"]
     assert_wl_fl(wl, fl)
     quant_module = get_module(x)
     if rounding == "nearest":
         out = quant_module.fixed_point_quantize_nearest(x.contiguous(), wl, fl, clamp, symmetric)
     elif rounding == "stochastic":
         out = quant_module.fixed_point_quantize_stochastic(x.contiguous(), wl, fl, clamp, symmetric)
+    elif rounding == "floor":
+        out = quant_module.fixed_point_quantize_floor(x.contiguous(), wl, fl, clamp, symmetric)
     return out
 
 

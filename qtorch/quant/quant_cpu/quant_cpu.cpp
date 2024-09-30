@@ -163,6 +163,27 @@ Tensor fixed_point_quantize_nearest(Tensor a, int wl, int fl, bool clamp, bool s
   return o;
 }
 
+Tensor fixed_point_quantize_floor(Tensor a, int wl, int fl, bool clamp, bool symmetric)
+{
+  CHECK_INPUT(a);
+  auto a_array = a.data_ptr<float>();
+  Tensor o = zeros_like(a);
+  auto o_array = o.data_ptr<float>();
+  int64_t size = a.numel();
+  int sigma = -fl;
+  float t_min, t_max;
+  fixed_min_max(wl, fl, symmetric, &t_min, &t_max);
+  for (int64_t i = 0; i < size; i++)
+  {
+    o_array[i] = round_floor(a_array[i], sigma);
+    if (clamp)
+    {
+      o_array[i] = clamp_helper(o_array[i], t_min, t_max);
+    }
+  }
+  return o;
+}
+
 unsigned int round_bitwise(unsigned int target, int man_bits, Mode rounding)
 {
   
@@ -317,6 +338,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
   m.def("float_quantize_stochastic", &float_quantize_stochastic, "Low-Bitwidth Floating Point Number Stochastic Quantization (CUDA)");
   m.def("fixed_point_quantize_nearest_mask", &fixed_point_quantize_nearest_mask, "Fixed Point Number Nearest Quantization with Mask (CPU)");
   m.def("fixed_point_quantize_nearest", &fixed_point_quantize_nearest, "Fixed Point Number Nearest Neighbor Quantization (CPU)");
+  m.def("fixed_point_quantize_floor", &fixed_point_quantize_floor, "Fixed Point Number Floor Quantization (CPU)");
   m.def("block_quantize_nearest", &block_quantize_nearest, "Block Floating Point Number Nearest Neighbor Quantization (CPU)");
   m.def("float_quantize_nearest", &float_quantize_nearest, "Low-Bitwidth Floating Point Number Nearest Neighbor Quantization (CPU)");
 }

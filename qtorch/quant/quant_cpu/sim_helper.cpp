@@ -19,3 +19,11 @@ float round(float a, float r, int sigma)
   a = ldexp(a, sigma);
   return a;
 }
+
+float round_floor(float a, int sigma)
+{
+  a = ldexp(a, -sigma);
+  a = floor(a);
+  a = ldexp(a, sigma);
+  return a;
+}

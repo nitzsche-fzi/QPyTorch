@@ -15,10 +15,17 @@ __device__ __forceinline__ float round(float a, float r, int sigma) {
 
 __device__ __forceinline__ float nearest_round(float a, int sigma) {
   a = ldexp(a, -sigma); 
-  // a = nearbyint(a);
-  a = round(a);
+  a = nearbyint(a);            // round half to even. matches cpu rounding
+  // a = round(a);             // calls cmath function! halfway cases rounded away from zero. doesn't match cpu implementation
   // a = floor(a+0.5);
   //a = ceil(a-0.5);
+  a = ldexp(a, sigma);
+  return a;
+}
+
+__device__ __forceinline__ float floor_round(float a, int sigma) {
+  a = ldexp(a, -sigma);
+  a = floor(a);
   a = ldexp(a, sigma);
   return a;
 }
