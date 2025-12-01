@@ -7,30 +7,53 @@ from torch.utils.cpp_extension import load
 import os
 
 current_path = os.path.dirname(os.path.realpath(__file__))
-quant_cpu = load(
-    name="quant_cpu",
-    sources=[
-        os.path.join(current_path, "quant_cpu/quant_cpu.cpp"),
-        os.path.join(current_path, "quant_cpu/bit_helper.cpp"),
-        os.path.join(current_path, "quant_cpu/sim_helper.cpp"),
-    ],
-)
+_default_build_dir = os.environ.get("TORCH_EXTENSIONS_DIR", os.path.expanduser("~/.cache/torch_extensions"))
 
-if torch.cuda.is_available():
-    quant_cuda = load(
-        name="quant_cuda",
-        sources=[
-            os.path.join(current_path, "quant_cuda/quant_cuda.cpp"),
-            os.path.join(current_path, "quant_cuda/bit_helper.cu"),
-            os.path.join(current_path, "quant_cuda/sim_helper.cu"),
-            os.path.join(current_path, "quant_cuda/block_kernel.cu"),
-            os.path.join(current_path, "quant_cuda/float_kernel.cu"),
-            os.path.join(current_path, "quant_cuda/fixed_point_kernel.cu"),
-            os.path.join(current_path, "quant_cuda/quant.cu"),
-        ],
-    )
-else:
-    quant_cuda = quant_cpu
+# Defer building/loading of C++/CUDA extensions until first use to avoid
+# long blocking at import time (FileBaton waits on the torch extensions cache).
+_quant_cpu = None
+_quant_cuda = None
+
+def _load_cpu_module():
+    global _quant_cpu
+    if _quant_cpu is None:
+        build_dir = os.environ.get("TORCH_EXTENSIONS_DIR", _default_build_dir)
+        _quant_cpu = load(
+            name="quant_cpu",
+            sources=[
+                os.path.join(current_path, "quant_cpu/quant_cpu.cpp"),
+                os.path.join(current_path, "quant_cpu/bit_helper.cpp"),
+                os.path.join(current_path, "quant_cpu/sim_helper.cpp"),
+            ],
+            build_directory=build_dir,
+            verbose=False,
+        )
+    return _quant_cpu
+
+
+def _load_cuda_module():
+    global _quant_cuda
+    if _quant_cuda is None:
+        build_dir = os.environ.get("TORCH_EXTENSIONS_DIR", _default_build_dir)
+        try:
+            _quant_cuda = load(
+                name="quant_cuda",
+                sources=[
+                    os.path.join(current_path, "quant_cuda/quant_cuda.cpp"),
+                    os.path.join(current_path, "quant_cuda/bit_helper.cu"),
+                    os.path.join(current_path, "quant_cuda/sim_helper.cu"),
+                    os.path.join(current_path, "quant_cuda/block_kernel.cu"),
+                    os.path.join(current_path, "quant_cuda/float_kernel.cu"),
+                    os.path.join(current_path, "quant_cuda/fixed_point_kernel.cu"),
+                    os.path.join(current_path, "quant_cuda/quant.cu"),
+                ],
+                build_directory=build_dir,
+                verbose=False,
+            )
+        except Exception:
+            # If CUDA build fails for any reason, fall back to CPU module.
+            _quant_cuda = _load_cpu_module()
+    return _quant_cuda
 
 __all__ = ["fixed_point_quantize", "block_quantize", "float_quantize", "quantizer"]
 
@@ -42,9 +65,9 @@ def assert_wl_fl(wl, fl, stage=""):
 
 def get_module(x):
     if x.is_cuda:
-        quant_module = quant_cuda
+        quant_module = _load_cuda_module()
     else:
-        quant_module = quant_cpu
+        quant_module = _load_cpu_module()
     return quant_module
 
 
